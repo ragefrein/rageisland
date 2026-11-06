@@ -20,7 +20,7 @@ gnome-extensions enable ragenotch@local
 
 Jika RageNotch sudah aktif di GNOME Shell 46, jalankan `./install-linux.sh --live`. Tekan **Alt+F2**, ketik `lg`, lalu tekan Enter untuk membuka Looking Glass. Tempel baris JavaScript yang dicetak installer ke tab **Evaluator**, tekan Enter, lalu tutup dengan Esc setelah muncul pesan bahwa versi baru aktif. Pembaruan ini memuat ulang RageNotch, termasuk mereset timer Fokus yang sedang berjalan.
 
-Arahkan kursor ke notch untuk membukanya, atau klik judulnya agar tetap terbuka. Klik judul sekali lagi untuk menutup. Putar lagu atau video di aplikasi yang mengekspos MPRIS untuk melihat judul, sampul, posisi, dan kontrol media. Pendaran mengikuti warna sampul ketika sampul tersedia.
+Arahkan kursor ke notch untuk membukanya, atau klik bagian atas agar tetap terbuka. Klik lagi untuk menutup. Jam lokal tampil saat notch ringkas maupun terbuka. Bar hijau bergerak selama musik diputar jika animasi aktif. Buka tab Media untuk melihat sampul, judul, lirik, serta posisi dan kontrol pemutaran di bawah progress bar. Saat sampul tersedia, pendaran tipis di panel terbuka mengikuti warnanya.
 
 Saat panel media dibuka, RageNotch mengirim judul, artis, dan, jika tersedia, album serta durasi ke LRCLIB untuk mencari lirik sinkron. Setel `synced_lyrics` ke `false` untuk mematikan permintaan lirik.
 

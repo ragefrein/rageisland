@@ -1,37 +1,98 @@
 .rage-notch {
-    color: #f3f4fb;
-    background-color: rgba(15, 16, 24, 0.97);
-    border: 1px solid #43465d;
+    font-family: Montserrat, Outfit Gothic, Inter, sans-serif;
+    font-weight: 400;
+    color: #f7f7f7;
+    background-color: #080808;
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .rage-header {
-    padding: 0 12px;
+    padding: 0 13px;
     border-radius: 20px;
 }
 
-.rage-header:focus {
+.rage-header:focus,
+.rage-header-toggle:focus {
     background-color: rgba(255, 255, 255, 0.09);
 }
 
 .rage-header-row,
 .rage-track-row,
+.rage-media-header,
 .rage-controls {
     spacing: 9px;
 }
 
-.rage-compact-title {
-    font-size: 11px;
-    font-weight: bold;
+.rage-media-header {
+    padding: 0 13px;
+}
+
+.rage-header-toggle {
+    border-radius: 11px;
+}
+
+.rage-meter {
+    spacing: 5px;
+}
+
+.rage-signal {
+    spacing: 3px;
+}
+
+.rage-signal-bar {
+    width: 2px;
+    border-radius: 2px;
+    background-color: #1ed760;
 }
 
 .rage-clock,
-.rage-time {
-    font-size: 10px;
-    color: #aeb4ca;
+.rage-header-status,
+.rage-time,
+.rage-timer {
+    font-feature-settings: "tnum";
+    font-weight: 500;
 }
 
+.rage-clock {
+    font-size: 13px;
+    min-width: 35px;
+    color: #f7f7f7;
+}
+
+.rage-source {
+    background-color: #252525;
+    color: #e7e7e7;
+}
+
+.rage-source-compact {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+}
+
+.rage-source-media {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+}
+
+.rage-source-spotify {
+    background-color: transparent;
+}
+
+.rage-compact-title {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.rage-header-status,
 .rage-time {
-    min-width: 38px;
+    font-size: 10px;
+    color: #a8a8a8;
+}
+
+.rage-transport {
+    spacing: 7px;
 }
 
 .rage-body {
@@ -48,10 +109,10 @@
 .rage-action {
     border-radius: 8px;
     padding: 5px 8px;
-    color: #cbd0e2;
-    background-color: #272a3a;
+    color: #c0c0c0;
+    background-color: #171717;
     font-size: 11px;
-    font-weight: bold;
+    font-weight: 500;
 }
 
 .rage-tab:checked,
@@ -59,18 +120,18 @@
 .rage-tab:focus,
 .rage-action:hover,
 .rage-action:focus {
-    color: #f3f4fb;
-    background-color: #485175;
+    color: #ffffff;
+    background-color: #333333;
 }
 
 .rage-action:insensitive {
-    color: #9298ae;
+    color: #929292;
 }
 
 .rage-utility-card {
     border-radius: 11px;
     padding: 10px 11px;
-    background-color: #202232;
+    background-color: #171717;
     spacing: 8px;
 }
 
@@ -78,9 +139,54 @@
     spacing: 4px;
 }
 
+.rage-focus-actions {
+    spacing: 9px;
+}
+
+.rage-focus-action {
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.rage-focus-action:hover,
+.rage-focus-action:focus {
+    border-color: #ffffff;
+}
+
+.rage-focus-toggle,
+.rage-battery-badge {
+    background-color: #33cd68;
+}
+
+.rage-focus-toggle:checked,
+.rage-focus-noise {
+    background-color: #ff6962;
+}
+
+.rage-focus-reset {
+    background-color: #61aaff;
+}
+
+.rage-focus-break {
+    background-color: #ffd052;
+}
+
+.rage-battery-compact {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+}
+
+.rage-battery-system {
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+}
+
 .rage-timer {
-    font-size: 22px;
-    font-weight: bold;
+    font-size: 24px;
 }
 
 .rage-utility-detail {
@@ -88,25 +194,25 @@
 }
 
 .rage-media {
-    spacing: 9px;
+    spacing: 7px;
 }
 
 .rage-cover {
     width: 52px;
     height: 52px;
-    background-color: #25283b;
-    border-radius: 12px;
-    color: #a1aee8;
+    background-color: #232323;
+    border-radius: 9px;
+    color: #b5b5b5;
 }
 
 .rage-track-title {
-    color: #f3f4fb;
-    font-weight: bold;
-    font-size: 15px;
+    color: #f7f7f7;
+    font-weight: 500;
+    font-size: 16px;
 }
 
 .rage-subtitle {
-    color: #aeb4ca;
+    color: #a8a8a8;
     font-size: 11px;
 }
 
@@ -114,44 +220,46 @@
 .rage-progress-fill {
     height: 3px;
     border-radius: 2px;
-    background-color: #383b50;
+    background-color: #292929;
 }
 
 .rage-control {
-    width: 30px;
-    height: 30px;
-    border-radius: 15px;
-    color: #f3f4fb;
-    background-color: #272a3a;
+    width: 25px;
+    height: 25px;
+    border-radius: 13px;
+    color: #f7f7f7;
+    background-color: #1c1c1c;
 }
 
 .rage-play {
-    width: 34px;
-    background-color: #3b4265;
+    width: 37px;
+    height: 37px;
+    border-radius: 19px;
+    background-color: #292929;
 }
 
 .rage-control:hover,
 .rage-control:focus {
-    background-color: #555e87;
+    background-color: #414141;
 }
 
 .rage-lyrics,
 .rage-idle {
     padding: 8px 11px;
     border-radius: 11px;
-    background-color: #202232;
+    background-color: #171717;
     spacing: 3px;
 }
 
 .rage-caption {
     font-size: 9px;
-    font-weight: bold;
-    color: #a8b6f0;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: #b2b2b2;
 }
 
 .rage-lyric {
     min-height: 15px;
     font-size: 12px;
-    font-weight: bold;
-    color: #eff1fd;
+    color: #f7f7f7;
 }

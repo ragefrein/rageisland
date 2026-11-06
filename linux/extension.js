@@ -13,8 +13,44 @@ import {loadConfig, saveTopPanelHidden} from './config.js';
 import {MediaPlayers} from './media.js';
 import {FocusTimer, SystemStatus, WhiteNoise} from './utilities.js';
 
-const DEFAULT_COLOR = [149, 164, 243];
+const DEFAULT_COLOR = [122, 150, 133];
 const timeNow = () => GLib.get_monotonic_time() / 1e6;
+const SPOTIFY_ICON = new Gio.BytesIcon({bytes: new GLib.Bytes(new TextEncoder().encode(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+    '<circle cx="16" cy="16" r="16" fill="#1ed760"/>' +
+    '<path d="M7 12c6-2 13-1 18 2M8.5 16.5c5-1.5 10.5-.75 15 1.5M10 20.5c4-1 8-.5 11.5 1.5" ' +
+    'fill="none" stroke="#080808" stroke-linecap="round" stroke-width="2.2"/></svg>',
+))});
+const MEDIA_ICON = new Gio.ThemedIcon({name: 'audio-x-generic-symbolic'});
+const SIGNAL_LEVELS = [0.42, 0.73, 1, 0.55, 0.85, 0.34];
+const SIGNAL_REST = [0.44, 1, 0.69];
+
+function drawnIcon(path, color = '#111820') {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path d="${path}" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+    return new Gio.BytesIcon({bytes: new GLib.Bytes(new TextEncoder().encode(svg))});
+}
+
+const PLAY_PATH = 'M9 5.5 19 12 9 18.5Z';
+const PAUSE_PATH = 'M9 6v12m6-12v12';
+const FOCUS_ICONS = {
+    start: drawnIcon(PLAY_PATH),
+    pause: drawnIcon(PAUSE_PATH),
+    reset: drawnIcon('M5 9a7.5 7.5 0 1 1 1.1 8.4M5 4.5V9h4.5'),
+    break: drawnIcon('M5 10h12v3a6 6 0 0 1-12 0zm12 0h1.5a2 2 0 0 1 0 4H17M4 20h15M9 6V4m4 2V4'),
+    focus: drawnIcon('M8 3h8m-4 0v3m5 1 2-2m0 8a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-7-3v3l2 1'),
+    noise: drawnIcon('M3 12h3l2-4 3 8 3-10 3 9 2-3h2'),
+    mute: drawnIcon('M3 12h3l2-4 3 8 2-5m2 3 2 2 2-4h2M4 4l16 16'),
+};
+const BATTERY_ICON = drawnIcon('M4.5 8h13v8h-13zm15 2.5v3m-12-1.5h6.5');
+const MEDIA_CONTROLS = {
+    play: drawnIcon(PLAY_PATH, '#f7f7f7'),
+    pause: drawnIcon(PAUSE_PATH, '#f7f7f7'),
+    previous: drawnIcon('M7 6v12m10-12-8 6 8 6Z', '#f7f7f7'),
+    stop: drawnIcon('M7 7h10v10H7Z', '#f7f7f7'),
+    next: drawnIcon('M17 6v12M7 6l8 6-8 6Z', '#f7f7f7'),
+};
 
 function label(text, style_class) {
     const actor = new St.Label({text, style_class, y_align: Clutter.ActorAlign.CENTER});
@@ -25,15 +61,26 @@ function label(text, style_class) {
 function button(icon, accessible_name, callback, style_class = 'rage-control') {
     const actor = new St.Button({
         style_class, accessible_name, can_focus: true,
-        child: new St.Icon({icon_name: icon, icon_size: 16}),
+        child: new St.Icon({gicon: icon, icon_size: 16}),
     });
     actor.connect('clicked', callback);
     return actor;
 }
 
-function formatTime(seconds) {
+function signalBars() {
+    const bars = new St.BoxLayout({style_class: 'rage-signal', y_align: Clutter.ActorAlign.CENTER});
+    for (const scale_y of SIGNAL_REST) {
+        const bar = new St.Widget({height: 16, scale_y, style_class: 'rage-signal-bar'});
+        bar.set_pivot_point(0.5, 1);
+        bars.add_child(bar);
+    }
+    return bars;
+}
+
+function formatTime(seconds, minuteDigits = 1) {
     const whole = Math.max(0, Math.floor(seconds));
-    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+    const minutes = String(Math.floor(whole / 60)).padStart(minuteDigits, '0');
+    return `${minutes}:${String(whole % 60).padStart(2, '0')}`;
 }
 
 export default class RageNotch extends Extension {
@@ -53,6 +100,7 @@ export default class RageNotch extends Extension {
         this._build();
         this._clock = new GnomeDesktop.WallClock();
         this._clock.connectObject('notify::clock', () => this._updateClock(), this._root);
+        St.Settings.get().connectObject('notify::enable-animations', () => this._syncSignalAnimation(), this._root);
         this._updateClock();
         this._layout(false);
         Main.layoutManager.addTopChrome(this._root, {affectsStruts: false});
@@ -96,18 +144,29 @@ export default class RageNotch extends Extension {
 
         this._header = new St.Button({style_class: 'rage-header', can_focus: true, accessible_name: 'Buka RageNotch'});
         this._header.connect('clicked', () => this._togglePinned());
-        const header = new St.BoxLayout({style_class: 'rage-header-row'});
+        const header = new St.BoxLayout({style_class: 'rage-header-row', x_expand: true});
         this._indicator = new St.Icon({icon_name: 'audio-x-generic-symbolic', icon_size: 14,
             style_class: 'rage-indicator', y_align: Clutter.ActorAlign.CENTER});
+        this._compactBattery = new St.Icon({gicon: BATTERY_ICON, icon_size: 14, y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'rage-battery-badge rage-battery-compact', visible: false});
+        this._compactSignal = signalBars();
         this._compactTitle = label('RageNotch', 'rage-compact-title');
         this._compactTitle.x_expand = true;
         this._clockLabel = label('', 'rage-clock');
+        this._headerStatus = label('', 'rage-header-status');
+        this._compactSource = new St.Icon({gicon: MEDIA_ICON, icon_size: 12, y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'rage-source rage-source-compact'});
         header.add_child(this._indicator);
+        header.add_child(this._compactBattery);
+        header.add_child(this._compactSignal);
         header.add_child(this._compactTitle);
+        header.add_child(this._headerStatus);
         header.add_child(this._clockLabel);
+        header.add_child(this._compactSource);
         this._header.set_child(header);
         this._root.add_child(this._header);
 
+        this._buildMediaHeader();
         this._body = new St.BoxLayout({vertical: true, style_class: 'rage-body', visible: false});
         this._root.add_child(this._body);
         this._pages = new Map();
@@ -122,18 +181,6 @@ export default class RageNotch extends Extension {
         }
         this._mediaView = new St.BoxLayout({vertical: true, style_class: 'rage-media', visible: false});
         this._mediaPage.add_child(this._mediaView);
-        const trackRow = new St.BoxLayout({style_class: 'rage-track-row'});
-        this._cover = new St.Icon({icon_name: 'audio-x-generic-symbolic', icon_size: 42,
-            style_class: 'rage-cover', y_align: Clutter.ActorAlign.CENTER});
-        trackRow.add_child(this._cover);
-        const trackText = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        this._trackTitle = label('', 'rage-track-title');
-        this._artist = label('', 'rage-subtitle');
-        trackText.add_child(this._trackTitle);
-        trackText.add_child(this._artist);
-        trackRow.add_child(trackText);
-        this._mediaView.add_child(trackRow);
-
         this._progress = new St.Widget({style_class: 'rage-progress', x_expand: true,
             layout_manager: new Clutter.FixedLayout()});
         this._progressFill = new St.Widget({style_class: 'rage-progress-fill', height: 3, width: 0});
@@ -141,15 +188,19 @@ export default class RageNotch extends Extension {
         this._mediaView.add_child(this._progress);
 
         const controls = new St.BoxLayout({style_class: 'rage-controls'});
-        this._elapsed = label('0:00', 'rage-time');
-        this._duration = label('–:––', 'rage-time');
-        this._elapsed.x_expand = this._duration.x_expand = true;
+        this._elapsed = label('00:00', 'rage-time');
+        this._duration = label('', 'rage-time');
         this._duration.x_align = Clutter.ActorAlign.END;
-        this._previous = button('media-skip-backward-symbolic', 'Lagu sebelumnya', () => this._media.control('Previous'));
-        this._play = button('media-playback-start-symbolic', 'Putar', () => this._media.control('PlayPause'), 'rage-control rage-play');
-        this._next = button('media-skip-forward-symbolic', 'Lagu berikutnya', () => this._media.control('Next'));
-        for (const actor of [this._elapsed, this._previous, this._play, this._next, this._duration])
-            controls.add_child(actor);
+        const transport = new St.BoxLayout({style_class: 'rage-transport', x_align: Clutter.ActorAlign.CENTER,
+            x_expand: true});
+        this._previous = button(MEDIA_CONTROLS.previous, 'Lagu sebelumnya', () => this._media.control('Previous'));
+        this._stop = button(MEDIA_CONTROLS.stop, 'Hentikan pemutaran', () => this._media.control('Stop'));
+        this._next = button(MEDIA_CONTROLS.next, 'Lagu berikutnya', () => this._media.control('Next'));
+        for (const control of [this._previous, this._stop, this._next])
+            transport.add_child(control);
+        controls.add_child(new St.Bin({width: 48, child: this._elapsed}));
+        controls.add_child(transport);
+        controls.add_child(new St.Bin({width: 48, child: this._duration}));
         this._mediaView.add_child(controls);
 
         this._lyricsCard = new St.BoxLayout({vertical: true, style_class: 'rage-lyrics'});
@@ -174,6 +225,37 @@ export default class RageNotch extends Extension {
         this._tabs.visible = this._pages.size > 1;
         this._selectPage(this._pages.keys().next().value);
         this._applyColor();
+    }
+
+    _buildMediaHeader() {
+        this._mediaHeader = new St.BoxLayout({style_class: 'rage-media-header', visible: false});
+        const details = new St.BoxLayout({style_class: 'rage-track-row', x_expand: true});
+        this._mediaHeaderToggle = new St.Button({style_class: 'rage-header-toggle', child: details,
+            x_expand: true, can_focus: true, accessible_name: 'Sematkan atau tutup RageNotch'});
+        this._mediaHeaderToggle.connect('clicked', () => this._togglePinned());
+        this._cover = new St.Icon({icon_name: 'audio-x-generic-symbolic', icon_size: 48,
+            style_class: 'rage-cover', y_align: Clutter.ActorAlign.CENTER});
+        const meter = new St.BoxLayout({style_class: 'rage-meter', y_align: Clutter.ActorAlign.CENTER});
+        this._mediaSignal = signalBars();
+        this._mediaClock = label('', 'rage-clock');
+        meter.add_child(this._mediaSignal);
+        meter.add_child(this._mediaClock);
+        const trackText = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        this._trackTitle = label('', 'rage-track-title');
+        this._artist = label('', 'rage-subtitle');
+        trackText.add_child(this._trackTitle);
+        trackText.add_child(this._artist);
+        details.add_child(this._cover);
+        details.add_child(meter);
+        details.add_child(trackText);
+        this._play = button(MEDIA_CONTROLS.play, 'Putar', () => this._media.control('PlayPause'), 'rage-control rage-play');
+        this._play.y_align = Clutter.ActorAlign.CENTER;
+        this._mediaSource = new St.Icon({gicon: MEDIA_ICON, icon_size: 16, y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'rage-source rage-source-media'});
+        this._mediaHeader.add_child(this._mediaHeaderToggle);
+        this._mediaHeader.add_child(this._play);
+        this._mediaHeader.add_child(this._mediaSource);
+        this._root.add_child(this._mediaHeader);
     }
 
     _addPage(id, title, view) {
@@ -213,28 +295,23 @@ export default class RageNotch extends Extension {
         top.add_child(this._focusTime);
         view.add_child(top);
 
-        const actions = new St.BoxLayout({style_class: 'rage-utility-row'});
-        const action = (text, callback) => {
-            const control = new St.Button({label: text, style_class: 'rage-action', can_focus: true});
-            control.connect('clicked', callback);
-            actions.add_child(control);
-            return control;
-        };
-        this._focusToggle = action('Mulai', () => this._focus.toggle());
-        action('Ulangi', () => this._focus.reset());
-        this._focusSwitch = action('Ke istirahat', () => {
+        const actions = new St.BoxLayout({style_class: 'rage-focus-actions'});
+        this._focusToggle = button(FOCUS_ICONS.start, 'Mulai', () => this._focus.toggle(),
+            'rage-focus-action rage-focus-toggle');
+        const reset = button(FOCUS_ICONS.reset, 'Ulangi', () => this._focus.reset(),
+            'rage-focus-action rage-focus-reset');
+        this._focusSwitch = button(FOCUS_ICONS.break, 'Ke istirahat', () => {
             this._focus.reset(this._focus.phase === 'focus' ? 'break' : 'focus');
-        });
-        view.add_child(actions);
-        this._noiseToggle = new St.Button({label: 'Putar white noise', style_class: 'rage-action',
-            can_focus: true, x_align: Clutter.ActorAlign.START});
-        this._noiseToggle.connect('clicked', () => {
+        }, 'rage-focus-action rage-focus-break');
+        this._noiseToggle = button(FOCUS_ICONS.noise, 'Putar white noise', () => {
             if (this._noise.playing)
                 this._noise.stop();
             else
                 this._noise.start();
-        });
-        view.add_child(this._noiseToggle);
+        }, 'rage-focus-action rage-focus-noise');
+        for (const control of [this._focusToggle, reset, this._focusSwitch, this._noiseToggle])
+            actions.add_child(control);
+        view.add_child(actions);
         this._addPage('focus', 'Fokus', view);
     }
 
@@ -320,9 +397,16 @@ export default class RageNotch extends Extension {
     _buildSystem() {
         const view = new St.BoxLayout({vertical: true, style_class: 'rage-utility-card'});
         if (this._config.battery) {
-            view.add_child(label('BATERAI', 'rage-caption'));
+            const battery = new St.BoxLayout({style_class: 'rage-utility-row'});
+            const icon = new St.Icon({gicon: BATTERY_ICON, icon_size: 19, y_align: Clutter.ActorAlign.CENTER,
+                style_class: 'rage-battery-badge rage-battery-system'});
+            const details = new St.BoxLayout({vertical: true, y_align: Clutter.ActorAlign.CENTER});
             this._batteryLabel = label('Baterai tidak tersedia.', 'rage-utility-detail');
-            view.add_child(this._batteryLabel);
+            details.add_child(label('BATERAI', 'rage-caption'));
+            details.add_child(this._batteryLabel);
+            battery.add_child(icon);
+            battery.add_child(details);
+            view.add_child(battery);
         }
         if (this._config.bluetooth) {
             view.add_child(label('BLUETOOTH', 'rage-caption'));
@@ -369,16 +453,26 @@ export default class RageNotch extends Extension {
     _renderNoise(error) {
         const {available, playing} = this._noise;
         this._noiseToggle.reactive = this._noiseToggle.can_focus = available;
-        this._noiseToggle.label = error ?? (!available ? 'White noise memerlukan GStreamer' :
+        this._noiseToggle.opacity = available ? 255 : 110;
+        this._noiseToggle.child.gicon = playing ? FOCUS_ICONS.mute : FOCUS_ICONS.noise;
+        this._noiseToggle.accessible_name = error ?? (!available ? 'White noise memerlukan GStreamer' :
             playing ? 'Matikan white noise' : 'Putar white noise');
+        if (error)
+            Main.notify('RageNotch', error);
     }
 
     _renderFocus(timer) {
         const focusing = timer.phase === 'focus';
         this._focusPhase.text = focusing ? 'WAKTU FOKUS' : 'ISTIRAHAT';
         this._focusTime.text = formatTime(Math.ceil(timer.remaining));
-        this._focusToggle.label = timer.running ? 'Jeda' : 'Mulai';
-        this._focusSwitch.label = focusing ? 'Ke istirahat' : 'Ke fokus';
+        this._focusToggle.child.gicon = timer.running ? FOCUS_ICONS.pause : FOCUS_ICONS.start;
+        this._focusToggle.accessible_name = timer.running ? 'Jeda' : 'Mulai';
+        if (timer.running)
+            this._focusToggle.add_style_pseudo_class('checked');
+        else
+            this._focusToggle.remove_style_pseudo_class('checked');
+        this._focusSwitch.child.gicon = focusing ? FOCUS_ICONS.break : FOCUS_ICONS.focus;
+        this._focusSwitch.accessible_name = focusing ? 'Ke istirahat' : 'Ke fokus';
         const autoNoise = this._config.autoWhiteNoise && focusing && timer.running;
         if (autoNoise !== this._autoNoiseActive) {
             this._autoNoiseActive = autoNoise;
@@ -430,7 +524,7 @@ export default class RageNotch extends Extension {
     _showIndicator(icon, title, value) {
         if (!this._root?.visible)
             return false;
-        this._flash = {icon, title, value};
+        this._flash = {icon, title, value, gicon: new Gio.ThemedIcon({name: icon})};
         this._updateCompact();
         if (this._flashTimer)
             GLib.Source.remove(this._flashTimer);
@@ -444,8 +538,8 @@ export default class RageNotch extends Extension {
     }
 
     _updateClock() {
-        this._timeText = GLib.DateTime.new_now_local().format('%H:%M');
-        this._updateCompact();
+        const time = GLib.DateTime.new_now_local().format('%H:%M');
+        this._clockLabel.text = this._mediaClock.text = time;
         if (this._expanded && this._activePage === 'agenda')
             this._renderAgenda(true);
     }
@@ -454,21 +548,69 @@ export default class RageNotch extends Extension {
         const track = this._track;
         const battery = this._system?.battery;
         const focus = this._focus?.running ? this._focus : null;
-        this._indicator.icon_name = this._flash?.icon ?? (focus ? 'alarm-symbolic' :
-            track ? (track.playing ? 'media-playback-start-symbolic' : 'audio-x-generic-symbolic') :
-                battery ? 'battery-symbolic' : 'audio-x-generic-symbolic');
+        const showTrack = !!track && !focus && !this._flash;
+        const showBattery = !!battery && !showTrack && !focus && !this._flash;
+        this._compactSignal.visible = this._compactSource.visible = showTrack;
+        this._compactBattery.visible = showBattery;
+        this._indicator.visible = !showTrack && !showBattery;
+        this._compactTitle.visible = !showTrack;
+        this._clockLabel.x_expand = showTrack;
+        this._indicator.icon_name = this._flash?.icon ?? (focus ? 'alarm-symbolic' : 'audio-x-generic-symbolic');
         this._compactTitle.text = this._flash?.title ?? (focus ? (focus.phase === 'focus' ? 'Fokus' : 'Istirahat') :
-            track?.title ?? (battery ? `Baterai ${battery.percentage}%` : 'RageNotch'));
-        this._clockLabel.text = this._flash?.value ?? (focus ? formatTime(Math.ceil(focus.remaining)) : this._timeText ?? '');
+            battery ? `${battery.percentage}%` : 'RageNotch');
+        this._headerStatus.text = this._flash?.value ?? (focus ? formatTime(Math.ceil(focus.remaining)) : '');
+        this._headerStatus.visible = !!this._headerStatus.text;
+        this._mediaSource.gicon = this._flash?.gicon ?? this._compactSource.gicon;
+        if (track)
+            this._artist.text = this._flash ? [this._flash.title, this._flash.value].filter(Boolean).join(' · ') :
+                track.artist || 'Artis tidak diketahui';
+        this._syncSignalAnimation();
+    }
+
+    _syncSignalAnimation() {
+        const animate = this._root.visible && this._track?.playing && !this._config.instant &&
+            St.Settings.get().enable_animations;
+        const visibleSignal = this._mediaHeader.visible ? this._mediaSignal :
+            this._compactSignal.visible ? this._compactSignal : null;
+        const target = animate ? visibleSignal : null;
+        if (target === this._signalTarget)
+            return;
+        this._stopSignalAnimation();
+        if (!target)
+            return;
+
+        this._signalTarget = target;
+        const bars = target.get_children();
+        let phase = 0;
+        this._signalTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            bars.forEach((bar, index) => bar.ease({
+                scale_y: SIGNAL_LEVELS[(phase + index * 2) % SIGNAL_LEVELS.length],
+                duration: 145,
+                mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
+            }));
+            phase = (phase + 1) % SIGNAL_LEVELS.length;
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopSignalAnimation() {
+        if (this._signalTimer)
+            GLib.Source.remove(this._signalTimer);
+        this._signalTimer = 0;
+        this._signalTarget?.get_children().forEach((bar, index) => {
+            bar.remove_transition('scale-y');
+            bar.scale_y = SIGNAL_REST[index];
+        });
+        this._signalTarget = null;
     }
 
     _applyColor() {
         const rgb = this._color.join(', ');
         const radius = this._config.style === 'minimalist_pill' && !this._expanded ? 28 : this._config.radius;
         const corners = this._config.style === 'attached_notch' ? `0 0 ${radius}px ${radius}px` : `${radius}px`;
-        const glow = this._config.glow ? `box-shadow: inset 0 0 16px rgba(${rgb}, 0.20);` : '';
-        this._root.set_style(`border-radius: ${corners}; border-color: rgba(${rgb}, 0.38); ${glow}`);
-        this._indicator.set_style(`color: rgb(${rgb});`);
+        const glow = this._config.glow && this._expanded && this._color !== DEFAULT_COLOR ?
+            `box-shadow: inset 0 0 12px rgba(${rgb}, 0.12);` : '';
+        this._root.set_style(`border-radius: ${corners}; ${glow}`);
         this._progressFill?.set_style(`background-color: rgb(${rgb});`);
     }
 
@@ -480,8 +622,14 @@ export default class RageNotch extends Extension {
             Math.min(this._config.compactWidth, 158) : this._config.compactWidth;
         const maxWidth = Math.max(1, monitor.width - 24);
         const width = Math.min(maxWidth, this._expanded ? this._config.expandedWidth : compactWidth);
-        const headerHeight = this._config.style === 'minimalist_pill' && !this._expanded ? 30 : 38;
+        const showMediaHeader = this._expanded && this._activePage === 'media' && !!this._track;
+        this._mediaHeader.visible = showMediaHeader;
+        this._header.visible = !showMediaHeader;
+        this._syncSignalAnimation();
+        const compactHeight = this._config.style === 'minimalist_pill' && !this._expanded ? 30 : 38;
+        const headerHeight = showMediaHeader ? 76 : compactHeight;
         this._header.height = headerHeight - 2;
+        this._mediaHeader.height = headerHeight - 2;
         this._body.set_position(0, headerHeight - 2);
         this._body.width = Math.max(1, width - 2);
         this._body.visible = this._expanded;
@@ -532,6 +680,7 @@ export default class RageNotch extends Extension {
         const roundedWidth = Math.max(1, Math.round(width));
         this._root.set_size(roundedWidth, Math.max(1, Math.round(height)));
         this._header.width = Math.max(1, roundedWidth - 2);
+        this._mediaHeader.width = this._header.width;
         this._place();
     }
 
@@ -556,13 +705,17 @@ export default class RageNotch extends Extension {
         const visible = !!monitor && !Main.overview.visible && Main.sessionMode.hasWindows &&
             !(this._config.hideFullscreen && monitor.inFullscreen) &&
             !(this._config.hideTopPanel && Main.panel.statusArea.dateMenu?.menu.isOpen);
+        const visibilityChanged = this._root.visible !== visible;
+        this._root.visible = visible;
         if (!visible) {
             this._pinned = false;
             this._ignoreHover = false;
             this._clearHover();
             this._setExpanded(false, false);
         }
-        this._root.visible = visible;
+        if (visibilityChanged)
+            this._refreshPlayback();
+        this._syncSignalAnimation();
         this._place();
     }
 
@@ -641,17 +794,31 @@ export default class RageNotch extends Extension {
             old?.lookupArtist !== track?.lookupArtist || old?.album !== track?.album || old?.duration !== track?.duration;
         this._setPosition(changed ? 0 : this._currentPosition());
         this._track = track;
+        if (old?.name !== track?.name) {
+            const spotify = /^org\.mpris\.MediaPlayer2\.spotify(?:d|[.-]|$)/i.test(track?.name ?? '');
+            this._compactSource.gicon = spotify ? SPOTIFY_ICON : MEDIA_ICON;
+            this._compactSource.icon_size = spotify ? 22 : 12;
+            this._mediaSource.icon_size = spotify ? 32 : 16;
+            for (const source of [this._compactSource, this._mediaSource]) {
+                if (spotify)
+                    source.add_style_class_name('rage-source-spotify');
+                else
+                    source.remove_style_class_name('rage-source-spotify');
+            }
+        }
+        for (const signal of [this._compactSignal, this._mediaSignal])
+            signal.opacity = track?.playing ? 255 : 92;
         this._updateCompact();
         this._mediaView.visible = !!track;
         this._idle.visible = !track;
         this._lyricsCard.visible = this._config.lyrics;
         if (track) {
             this._trackTitle.text = track.title;
-            this._artist.text = track.artist || 'Artis tidak diketahui';
-            this._duration.text = track.duration > 0 ? formatTime(track.duration) : '–:––';
-            this._play.child.icon_name = track.playing ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
+            this._duration.text = track.duration > 0 ? formatTime(track.duration, 2) : '–:––';
+            this._play.child.gicon = track.playing ? MEDIA_CONTROLS.pause : MEDIA_CONTROLS.play;
             this._play.accessible_name = track.playing ? 'Jeda' : 'Putar';
-            for (const [control, enabled] of [[this._play, track.playPause], [this._previous, track.previous], [this._next, track.next]]) {
+            for (const [control, enabled] of [[this._play, track.playPause], [this._previous, track.previous],
+                [this._stop, track.stop], [this._next, track.next]]) {
                 control.reactive = control.can_focus = enabled;
                 control.opacity = enabled ? 255 : 92;
             }
@@ -701,7 +868,7 @@ export default class RageNotch extends Extension {
             GLib.Source.remove(this._tick);
         this._tick = 0;
         this._positionRequest++;
-        if (!this._expanded || this._activePage !== 'media' || !this._track) {
+        if (!this._root.visible || !this._mediaHeader.visible || !this._track) {
             this._stopLyrics();
             return;
         }
@@ -744,10 +911,10 @@ export default class RageNotch extends Extension {
     }
 
     _renderPosition() {
-        if (!this._track || !this._expanded || this._activePage !== 'media')
+        if (!this._track || !this._root.visible || !this._mediaHeader.visible)
             return;
         const position = this._currentPosition();
-        const elapsed = formatTime(position);
+        const elapsed = formatTime(position, 2);
         if (this._elapsed.text !== elapsed)
             this._elapsed.text = elapsed;
         const barWidth = Math.max(0, this._body.width - 28);
@@ -804,6 +971,7 @@ export default class RageNotch extends Extension {
     disable() {
         this._clearHover();
         this._stopLyrics();
+        this._stopSignalAnimation();
         this._hud?.clear();
         this._hud = null;
         this._focus?.destroy();

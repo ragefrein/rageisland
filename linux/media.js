@@ -98,6 +98,7 @@ export class MediaPlayers {
             if (!metadata['xesam:title'] || metadata['mpris:trackid'] === NO_TRACK)
                 continue;
             const artists = metadata['xesam:artist'];
+            const canControl = get('CanControl') === true;
             tracks.push({
                 name,
                 proxy,
@@ -112,8 +113,9 @@ export class MediaPlayers {
                 status,
                 rate: get('Rate') || 1,
                 previous: get('CanGoPrevious') === true,
+                stop: canControl && status !== 'Stopped',
                 next: get('CanGoNext') === true,
-                playPause: get('CanControl') === true &&
+                playPause: canControl &&
                     get(status === 'Playing' ? 'CanPause' : 'CanPlay') === true,
             });
         }

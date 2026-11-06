@@ -3,5 +3,5 @@
   "name": "RageNotch",
   "description": "A lightweight media and productivity notch for GNOME Shell.",
   "shell-version": ["46"],
-  "version": 3
+  "version": 6
 }
