@@ -1,0 +1,157 @@
+.rage-notch {
+    color: #f3f4fb;
+    background-color: rgba(15, 16, 24, 0.97);
+    border: 1px solid #43465d;
+}
+
+.rage-header {
+    padding: 0 12px;
+    border-radius: 20px;
+}
+
+.rage-header:focus {
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+.rage-header-row,
+.rage-track-row,
+.rage-controls {
+    spacing: 9px;
+}
+
+.rage-compact-title {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.rage-clock,
+.rage-time {
+    font-size: 10px;
+    color: #aeb4ca;
+}
+
+.rage-time {
+    min-width: 38px;
+}
+
+.rage-body {
+    padding: 0 14px 12px;
+    spacing: 8px;
+}
+
+.rage-tabs,
+.rage-utility-row {
+    spacing: 6px;
+}
+
+.rage-tab,
+.rage-action {
+    border-radius: 8px;
+    padding: 5px 8px;
+    color: #cbd0e2;
+    background-color: #272a3a;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.rage-tab:checked,
+.rage-tab:hover,
+.rage-tab:focus,
+.rage-action:hover,
+.rage-action:focus {
+    color: #f3f4fb;
+    background-color: #485175;
+}
+
+.rage-action:insensitive {
+    color: #9298ae;
+}
+
+.rage-utility-card {
+    border-radius: 11px;
+    padding: 10px 11px;
+    background-color: #202232;
+    spacing: 8px;
+}
+
+.rage-utility-list {
+    spacing: 4px;
+}
+
+.rage-timer {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.rage-utility-detail {
+    font-size: 12px;
+}
+
+.rage-media {
+    spacing: 9px;
+}
+
+.rage-cover {
+    width: 52px;
+    height: 52px;
+    background-color: #25283b;
+    border-radius: 12px;
+    color: #a1aee8;
+}
+
+.rage-track-title {
+    color: #f3f4fb;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.rage-subtitle {
+    color: #aeb4ca;
+    font-size: 11px;
+}
+
+.rage-progress,
+.rage-progress-fill {
+    height: 3px;
+    border-radius: 2px;
+    background-color: #383b50;
+}
+
+.rage-control {
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    color: #f3f4fb;
+    background-color: #272a3a;
+}
+
+.rage-play {
+    width: 34px;
+    background-color: #3b4265;
+}
+
+.rage-control:hover,
+.rage-control:focus {
+    background-color: #555e87;
+}
+
+.rage-lyrics,
+.rage-idle {
+    padding: 8px 11px;
+    border-radius: 11px;
+    background-color: #202232;
+    spacing: 3px;
+}
+
+.rage-caption {
+    font-size: 9px;
+    font-weight: bold;
+    color: #a8b6f0;
+}
+
+.rage-lyric {
+    min-height: 15px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #eff1fd;
+}

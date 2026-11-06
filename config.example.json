@@ -1,0 +1,34 @@
+{
+  "appearance": {
+    "style": "floating_island",
+    "position": "top_center",
+    "margin_top": 6,
+    "corner_radius": 24,
+    "compact_width": 186,
+    "expanded_width": 388,
+    "chameleon_glow": "album_art",
+    "physics": {
+      "preset": "apple_fluid"
+    }
+  },
+  "behavior": {
+    "expand_on_hover": true,
+    "hover_delay_ms": 150,
+    "hide_fullscreen": true,
+    "hide_top_panel": false
+  },
+  "modules": {
+    "media_player": true,
+    "synced_lyrics": true,
+    "pomodoro": true,
+    "calendar": true,
+    "battery": true,
+    "bluetooth": true,
+    "system_hud": false
+  },
+  "pomodoro": {
+    "focus_minutes": 25,
+    "break_minutes": 5,
+    "auto_white_noise": false
+  }
+}
