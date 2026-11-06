@@ -6,6 +6,7 @@
     "corner_radius": 24,
     "compact_width": 186,
     "expanded_width": 388,
+    "lyrics_auto_width": true,
     "chameleon_glow": "album_art",
     "physics": {
       "preset": "apple_fluid"
@@ -24,6 +25,8 @@
     "calendar": true,
     "battery": true,
     "bluetooth": true,
+    "clipboard_shelf": true,
+    "dev_port_watcher": true,
     "system_hud": false
   },
   "pomodoro": {

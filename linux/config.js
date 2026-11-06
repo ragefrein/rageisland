@@ -21,6 +21,26 @@ function configFile() {
 }
 
 export function saveTopPanelHidden(hidden) {
+    saveSetting('behavior', 'hide_top_panel', hidden);
+}
+
+export function saveAppearanceStyle(style) {
+    saveSetting('appearance', 'style', style);
+}
+
+export function saveLyricAutoWidth(enabled) {
+    saveSetting('appearance', 'lyrics_auto_width', enabled);
+}
+
+export function saveShelfPaths(paths) {
+    saveSetting('shelf', 'paths', paths);
+}
+
+export function saveDeveloperRepo(path) {
+    saveSetting('developer', 'repo_path', path);
+}
+
+function saveSetting(section, key, value) {
     const file = configFile();
     let config = {};
     let etag = null;
@@ -33,7 +53,7 @@ export function saveTopPanelHidden(hidden) {
             throw error;
     }
     if (!config || typeof config !== 'object' || Array.isArray(config) ||
-        (config.behavior != null && (typeof config.behavior !== 'object' || Array.isArray(config.behavior))))
+        (config[section] != null && (typeof config[section] !== 'object' || Array.isArray(config[section]))))
         throw new Error('Format config.json tidak valid.');
 
     try {
@@ -42,8 +62,8 @@ export function saveTopPanelHidden(hidden) {
         if (!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.EXISTS))
             throw error;
     }
-    config.behavior ??= {};
-    config.behavior.hide_top_panel = hidden;
+    config[section] ??= {};
+    config[section][key] = value;
     file.replace_contents(`${JSON.stringify(config, null, 2)}\n`, etag, false, Gio.FileCreateFlags.PRIVATE, null);
 }
 
@@ -73,6 +93,7 @@ export function loadConfig() {
         radius: number(appearance.corner_radius, 6, 32, 24),
         compactWidth,
         expandedWidth: number(appearance.expanded_width, Math.max(320, compactWidth), 540, 388),
+        lyricAutoWidth: appearance.lyrics_auto_width !== false,
         glow: appearance.chameleon_glow !== 'off',
         instant: preset === 'instant',
         stiffness: number(physics.stiffness, 40, 650, presets[preset].stiffness),
@@ -87,6 +108,12 @@ export function loadConfig() {
         calendar: modules.calendar !== false,
         battery: modules.battery !== false,
         bluetooth: modules.bluetooth !== false,
+        shelf: modules.clipboard_shelf !== false,
+        developer: modules.dev_port_watcher !== false,
+        shelfPaths: Array.isArray(raw.shelf?.paths) ?
+            [...new Set(raw.shelf.paths.filter(path => typeof path === 'string' && GLib.path_is_absolute(path)))].slice(0, 8) : [],
+        developerRepo: typeof raw.developer?.repo_path === 'string' && GLib.path_is_absolute(raw.developer.repo_path) ?
+            raw.developer.repo_path : '',
         systemHud: modules.system_hud === true,
         focusMinutes: Math.round(number(focus.focus_minutes, 1, 180, 25)),
         breakMinutes: Math.round(number(focus.break_minutes, 1, 60, 5)),

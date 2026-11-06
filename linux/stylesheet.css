@@ -1,6 +1,6 @@
 .rage-notch {
-    font-family: Montserrat, Outfit Gothic, Inter, sans-serif;
-    font-weight: 400;
+    font-family: Montserrat, Inter, sans-serif;
+    font-weight: 600;
     color: #f7f7f7;
     background-color: #080808;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -24,15 +24,11 @@
 }
 
 .rage-media-header {
-    padding: 0 13px;
+    height: 53px;
 }
 
 .rage-header-toggle {
     border-radius: 11px;
-}
-
-.rage-meter {
-    spacing: 5px;
 }
 
 .rage-signal {
@@ -50,7 +46,7 @@
 .rage-time,
 .rage-timer {
     font-feature-settings: "tnum";
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .rage-clock {
@@ -70,19 +66,13 @@
     border-radius: 11px;
 }
 
-.rage-source-media {
-    width: 32px;
-    height: 32px;
-    border-radius: 16px;
-}
-
 .rage-source-spotify {
     background-color: transparent;
 }
 
 .rage-compact-title {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .rage-header-status,
@@ -100,28 +90,63 @@
     spacing: 8px;
 }
 
-.rage-tabs,
 .rage-utility-row {
     spacing: 6px;
 }
 
-.rage-tab,
+.rage-tabs {
+    spacing: 2px;
+}
+
+.rage-footer {
+    height: 29px;
+}
+
+.rage-settings {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    background-color: #202020;
+}
+
+.rage-settings:hover,
+.rage-settings:focus {
+    background-color: #393939;
+}
+
+.rage-tab {
+    width: 29px;
+    height: 24px;
+}
+
+.rage-tab-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: #f3f3f3;
+}
+
 .rage-action {
     border-radius: 8px;
     padding: 5px 8px;
     color: #c0c0c0;
     background-color: #171717;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-.rage-tab:checked,
-.rage-tab:hover,
-.rage-tab:focus,
+.rage-action:checked,
 .rage-action:hover,
-.rage-action:focus {
+.rage-action:focus,
+.rage-shelf-row:hover,
+.rage-shelf-row:focus {
     color: #ffffff;
     background-color: #333333;
+}
+
+.rage-tab:focus {
+    box-shadow: inset 0 0 0 1px #666666;
+    border-radius: 6px;
 }
 
 .rage-action:insensitive {
@@ -144,10 +169,10 @@
 }
 
 .rage-focus-action {
-    width: 34px;
-    height: 34px;
-    border-radius: 17px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
 }
 
 .rage-focus-action:hover,
@@ -157,20 +182,32 @@
 
 .rage-focus-toggle,
 .rage-battery-badge {
-    background-color: #33cd68;
+    background-color: #16884b;
+    background-gradient-direction: vertical;
+    background-gradient-start: #28b365;
+    background-gradient-end: #147543;
 }
 
 .rage-focus-toggle:checked,
 .rage-focus-noise {
-    background-color: #ff6962;
+    background-color: #d9434e;
+    background-gradient-direction: vertical;
+    background-gradient-start: #f46164;
+    background-gradient-end: #c52945;
 }
 
 .rage-focus-reset {
-    background-color: #61aaff;
+    background-color: #2479e3;
+    background-gradient-direction: vertical;
+    background-gradient-start: #57a4ff;
+    background-gradient-end: #1a5dc9;
 }
 
 .rage-focus-break {
-    background-color: #ffd052;
+    background-color: #ffc64b;
+    background-gradient-direction: vertical;
+    background-gradient-start: #ffe181;
+    background-gradient-end: #f2ae29;
 }
 
 .rage-battery-compact {
@@ -197,6 +234,15 @@
     spacing: 7px;
 }
 
+.rage-media-split,
+.rage-agenda-split {
+    spacing: 10px;
+}
+
+.rage-media-split .rage-controls {
+    spacing: 4px;
+}
+
 .rage-cover {
     width: 52px;
     height: 52px;
@@ -207,7 +253,7 @@
 
 .rage-track-title {
     color: #f7f7f7;
-    font-weight: 500;
+    font-weight: 700;
     font-size: 16px;
 }
 
@@ -232,10 +278,10 @@
 }
 
 .rage-play {
-    width: 37px;
-    height: 37px;
-    border-radius: 19px;
-    background-color: #292929;
+    width: 29px;
+    height: 29px;
+    border-radius: 15px;
+    background-color: #353535;
 }
 
 .rage-control:hover,
@@ -253,13 +299,154 @@
 
 .rage-caption {
     font-size: 9px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.5px;
     color: #b2b2b2;
 }
 
 .rage-lyric {
-    min-height: 15px;
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: 700;
     color: #f7f7f7;
+}
+
+.rage-compact-lyric {
+    color: #d4d4d4;
+    font-size: 11px;
+}
+
+.rage-idle {
+    padding: 14px 10px;
+}
+
+.rage-idle-title {
+    text-align: center;
+}
+
+.rage-mini-calendar {
+    spacing: 2px;
+    padding: 6px;
+}
+
+.rage-calendar-grid {
+    spacing: 2px;
+}
+
+.rage-calendar-navigation {
+    spacing: 3px;
+}
+
+.rage-calendar-arrow {
+    min-width: 17px;
+    height: 19px;
+    border-radius: 5px;
+    font-size: 9px;
+    color: #d9d9d9;
+}
+
+.rage-calendar-arrow:hover,
+.rage-calendar-arrow:focus,
+.rage-calendar-cell:hover,
+.rage-calendar-cell:focus {
+    background-color: #3a3a3a;
+}
+
+.rage-calendar-title {
+    color: #f7f7f7;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.rage-calendar-year {
+    color: #b4b4b4;
+    font-size: 10px;
+    text-align: center;
+}
+
+.rage-calendar-row {
+    spacing: 2px;
+}
+
+.rage-calendar-cell,
+.rage-calendar-weekday {
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    font-size: 9px;
+    color: #d3d3d3;
+    border-radius: 5px;
+}
+
+.rage-calendar-weekday {
+    color: #868686;
+}
+
+.rage-calendar-today {
+    color: #61de99;
+    font-weight: 700;
+}
+
+.rage-calendar-cell:checked {
+    color: #111111;
+    background-color: #e8e8e8;
+}
+
+.rage-system {
+    spacing: 10px;
+}
+
+.rage-system-devices {
+    spacing: 21px;
+}
+
+.rage-system-item {
+    width: 128px;
+    spacing: 3px;
+}
+
+.rage-meter-value {
+    text-align: center;
+    font-size: 11px;
+    color: #dfdfdf;
+}
+
+.modal-dialog.rage-preferences {
+    min-width: 310px;
+    background-color: #121212;
+    border-radius: 18px;
+    color: #f7f7f7;
+    box-shadow: inset 0 0 0 1px #343434;
+    font-family: Montserrat, Inter, sans-serif;
+}
+
+.modal-dialog.rage-preferences .modal-dialog-content-box {
+    margin: 24px;
+    spacing: 12px;
+}
+
+.modal-dialog.rage-preferences .modal-dialog-linked-button {
+    color: #eeeeee;
+    background-color: #242424;
+}
+
+.modal-dialog.rage-preferences .modal-dialog-linked-button:hover,
+.modal-dialog.rage-preferences .modal-dialog-linked-button:focus {
+    color: #ffffff;
+    background-color: #353535;
+}
+
+.rage-shelf-row {
+    border-radius: 6px;
+    padding: 5px 8px;
+}
+
+.rage-subtabs {
+    spacing: 6px;
+}
+
+.rage-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 6px;
 }

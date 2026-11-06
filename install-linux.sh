@@ -18,9 +18,26 @@ gnome-extensions pack \
     --extra-source=media.js \
     --extra-source=utilities.js \
     --extra-source=live-update.js \
+    --extra-source=LICENSE-Tabler.txt \
     --out-dir="$bundle_dir" "$project_dir/linux"
 
 gnome-extensions install "$@" "$bundle_dir/ragenotch@local.shell-extension.zip"
+
+font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/ragenotch"
+fonts_changed=false
+mkdir -p -- "$font_dir"
+for font in Montserrat-SemiBold.ttf Montserrat-Bold.ttf; do
+    if ! cmp -s -- "$project_dir/fonts/$font" "$font_dir/$font"; then
+        install -m 644 -- "$project_dir/fonts/$font" "$font_dir/$font"
+        fonts_changed=true
+    fi
+done
+install -m 644 -- "$project_dir/fonts/OFL-Montserrat.txt" "$font_dir/OFL-Montserrat.txt"
+if "$fonts_changed"; then
+    fc-cache -f -- "$font_dir"
+    printf '%s\n' 'Montserrat terpasang. Jika font belum berubah setelah pembaruan langsung, keluar dan masuk sekali agar GNOME membaca font baru.'
+fi
+
 if "$live"; then
     cat <<'INSTRUCTIONS'
 RageNotch terpasang. Di desktop GNOME, tekan Alt+F2, ketik lg, lalu Enter.
